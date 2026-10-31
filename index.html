@@ -70,7 +70,7 @@ button{border:0;cursor:pointer;touch-action:manipulation}
 <!-- ============ VISTA ESPECTADOR ============ -->
 <div id="viewer">
   <div class="panel">
-    <div style="text-align:center"><span class="badge"><span class="dot"></span>EN DIRECTO</span></div>
+    <div style="text-align:center"><span class="badge" id="vBadge"><span class="dot"></span>EN DIRECTO</span></div>
     <div class="vcomp" id="vComp"></div>
     <div class="vteams">
       <div class="vteam"><div class="vname" id="vHome"></div><div class="vscore" id="vHomeScore">0</div></div>
@@ -294,6 +294,8 @@ function renderViewer(m){
   $("vHomeScore").textContent=m.hs??0; $("vAwayScore").textContent=m.as??0;
   $("vPeriod").textContent=PERIODOS[m.p]||"";
   $("vDate").textContent=m.fecha||"";
+  const vb=$("vBadge");
+  if(m.fin){ vb.className="badge off"; vb.textContent="FINALIZADO"; } else { vb.className="badge"; vb.innerHTML='<span class="dot"></span>EN DIRECTO'; }
   document.title=`${m.hs??0}-${m.as??0} · Marcador en directo`;
 }
 async function iniciarViewer(code){
@@ -329,10 +331,18 @@ if(viewCode && !opKey){
     })();
   }else{
     const l=cargaLiveLocal();
-    if(l&&l.codigo&&LIVE){ live.codigo=l.codigo; live.token=l.token; activarLive(); }
+    if(l&&l.codigo&&LIVE){ live.codigo=l.codigo; live.token=l.token;
+      (async()=>{
+        try{
+          const {data}=await sb.from("partidos").select("estado").eq("codigo",l.codigo).maybeSingle();
+          if(data&&data.estado){ st={...nuevoEstado(),...data.estado}; }
+        }catch(e){}
+        render(); activarLive();
+      })();
+    }
   }
   render(); renderHist();
 }
 </script>
 </body>
-</html>
+  </html>
