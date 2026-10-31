@@ -297,7 +297,7 @@ function renderViewer(m){
   document.title=`${m.hs??0}-${m.as??0} · Marcador en directo`;
 }
 async function iniciarViewer(code){
-  $("operator").style.display="none"; $("viewer").style.display="block";
+  $("operator").style.display="none"; $("viewer").style.display="block"; $("liveBadge").classList.add("hidden");
   if(!LIVE){ $("vPeriod").textContent="Servicio no configurado"; return; }
   const {data}=await sb.from("partidos").select("estado").eq("codigo",code).maybeSingle();
   if(data&&data.estado) renderViewer(data.estado);
