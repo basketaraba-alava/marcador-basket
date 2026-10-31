@@ -237,7 +237,15 @@ $("fFecha").onchange=e=>{ st.fecha=e.target.value; pushLive(); };
 $("fComp").oninput=e=>{ st.comp=e.target.value; pushLive(); };
 $("fHome").oninput=e=>{ st.home=e.target.value; pushLive(); };
 $("fAway").oninput=e=>{ st.away=e.target.value; pushLive(); };
-$("btnNuevo").onclick=()=>{ st=nuevoEstado(); undoStack=[]; render(); pushLive(); };
+$("btnNuevo").onclick=async()=>{
+  if(live.codigo&&LIVE){
+    try{ await sb.rpc("actualizar_partido",{p_codigo:live.codigo,p_token:live.token,p_estado:{...estadoPublico(),fin:true}}); }catch(e){}
+    live={codigo:null,token:null,timer:null}; localStorage.removeItem(LKEY);
+    $("livePanel").style.display="none"; setBadge(false);
+    history.replaceState(null,"",location.pathname);
+  }
+  st=nuevoEstado(); undoStack=[]; render();
+};
 $("btnGuardar").onclick=()=>{
   const h=getHist(); h.unshift({...estadoPublico(),pname:PERIODOS[st.p]}); setHist(h);
   const b=$("btnGuardar"); b.textContent="✓ Guardado"; setTimeout(()=>b.textContent="Guardar resultado",1200);
@@ -345,4 +353,4 @@ if(viewCode && !opKey){
 }
 </script>
 </body>
-  </html>
+</html>
