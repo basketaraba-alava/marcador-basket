@@ -74,6 +74,11 @@ button{border:0;cursor:pointer;touch-action:manipulation}
 .sx{min-width:48px;padding:4px 7px;border-radius:9px;background:#101a23;border:1px solid var(--line);text-align:center}
 .sx .l{display:block;color:var(--muted);font-size:10px;letter-spacing:.5px}
 .sx .s{display:block;font-weight:800;font-size:14px;font-variant-numeric:tabular-nums;margin-top:1px}
+.setsrow{display:flex;align-items:baseline;justify-content:center;gap:9px;margin:0 0 10px}
+.setsnum{font-size:clamp(44px,12vw,64px);font-weight:850;font-variant-numeric:tabular-nums;line-height:1.1}
+.setslbl{color:var(--muted);font-size:11px;font-weight:800;letter-spacing:1px}
+#viewer .setsrow{margin:2px 0 0}
+#viewer .setsnum{font-size:clamp(46px,13vw,72px)}
 .hidden{display:none!important}
 </style>
 </head>
@@ -86,9 +91,9 @@ button{border:0;cursor:pointer;touch-action:manipulation}
     <div style="text-align:center"><span class="badge" id="vBadge"><span class="dot"></span>EN DIRECTO</span></div>
     <div class="vcomp" id="vComp"></div>
     <div class="vteams">
-      <div class="vteam"><div class="crestslot"><img id="vCrestHome" class="hidden" alt="Escudo del Araba"></div><div class="vname" id="vHome"></div><div class="vscore" id="vHomeScore">0</div></div>
+      <div class="vteam"><div class="crestslot"><img id="vCrestHome" class="hidden" alt="Escudo del Araba"></div><div class="vname" id="vHome"></div><div class="vscore" id="vHomeScore">0</div><div class="setsrow"><span class="setsnum" id="vWHome">0</span><span class="setslbl">SEXTOS</span></div></div>
       <div class="vdash">−</div>
-      <div class="vteam"><div class="crestslot"><img id="vCrestAway" class="hidden" alt="Escudo del Araba"></div><div class="vname" id="vAway"></div><div class="vscore" id="vAwayScore">0</div></div>
+      <div class="vteam"><div class="crestslot"><img id="vCrestAway" class="hidden" alt="Escudo del Araba"></div><div class="vname" id="vAway"></div><div class="vscore" id="vAwayScore">0</div><div class="setsrow"><span class="setsnum" id="vWAway">0</span><span class="setslbl">SEXTOS</span></div></div>
     </div>
     <div class="sextos" id="vSx"></div>
     <div class="vperiod" id="vPeriod"></div>
@@ -114,6 +119,7 @@ button{border:0;cursor:pointer;touch-action:manipulation}
         <div class="crestslot"><img id="crestHome" class="hidden" alt="Escudo del Araba"></div>
         <input class="team-name" id="fHome" value="Equipo local">
         <div class="score" id="sHome">0</div>
+        <div class="setsrow"><span class="setsnum" id="wHome">0</span><span class="setslbl">SEXTOS</span></div>
         <div class="controls">
           <button class="scorebtn minus" data-team="home" data-d="-1">−</button>
           <button class="scorebtn plus home" data-team="home" data-d="1">+</button>
@@ -124,6 +130,7 @@ button{border:0;cursor:pointer;touch-action:manipulation}
         <div class="crestslot"><img id="crestAway" class="hidden" alt="Escudo del Araba"></div>
         <input class="team-name" id="fAway" value="Equipo visitante">
         <div class="score" id="sAway">0</div>
+        <div class="setsrow"><span class="setsnum" id="wAway">0</span><span class="setslbl">SEXTOS</span></div>
         <div class="controls">
           <button class="scorebtn minus" data-team="away" data-d="-1">−</button>
           <button class="scorebtn plus away" data-team="away" data-d="1">+</button>
@@ -197,6 +204,19 @@ function sxHtml(arr,names){
   const map={}; (arr||[]).forEach(s=>{ if(s.dhs!=null) map[s.p]=s.dhs+"-"+s.das; });
   return [0,1,2,4,5,6].map(i=>`<div class="sx"><span class="l">${sxLabel(names,i)}</span><span class="s">${map[i]||"—"}</span></div>`).join("");
 }
+/* Resultado general por sextos: 1 punto al ganador de cada sexto; si empatan, 1 punto a cada equipo.
+   Se calcula siempre desde los parciales guardados (sx), sin estado aparte: correcciones y
+   retrocesos de periodo no pueden contar dos veces. Parcial desconocido (dhs/das null): no cuenta. */
+function sextosGanados(sx){
+  let h=0,a=0;
+  (sx||[]).forEach(s=>{
+    if(s.dhs==null||s.das==null) return;
+    if(s.dhs>s.das) h++;
+    else if(s.das>s.dhs) a++;
+    else { h++; a++; }
+  });
+  return {h,a};
+}
 /* pasa un estado antiguo (cuartos) a sextos conservando el nombre del periodo */
 function aSextos(e){
   if(!e) return e;
@@ -244,6 +264,7 @@ function render(){
   if(document.activeElement!==$("fHome")) $("fHome").value=st.home;
   if(document.activeElement!==$("fAway")) $("fAway").value=st.away;
   $("sHome").textContent=st.hs; $("sAway").textContent=st.as;
+  const sg=sextosGanados(st.sx); $("wHome").textContent=sg.h; $("wAway").textContent=sg.a;
   $("pName").textContent=PERIODOS_6[st.p]||PERIODOS_6[0];
   $("crestHome").classList.toggle("hidden",st.crest!=="home");
   $("crestAway").classList.toggle("hidden",st.crest!=="away");
@@ -388,6 +409,7 @@ function renderViewer(m){
   $("vComp").textContent=m.comp||"";
   $("vHome").textContent=m.home||"Local"; $("vAway").textContent=m.away||"Visitante";
   $("vHomeScore").textContent=m.hs??0; $("vAwayScore").textContent=m.as??0;
+  const vg=sextosGanados(m.sx); $("vWHome").textContent=vg.h; $("vWAway").textContent=vg.a;
   $("vCrestHome").classList.toggle("hidden",m.crest!=="home");
   $("vCrestAway").classList.toggle("hidden",m.crest!=="away");
   $("vPeriod").textContent=namesOf(m)[m.p]||"";
