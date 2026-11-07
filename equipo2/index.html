@@ -428,8 +428,8 @@ $("btnStopLive").onclick=async()=>{
 function renderViewer(m){
   $("vComp").textContent=m.comp||"";
   $("vHome").textContent=m.home||"Local"; $("vAway").textContent=m.away||"Visitante";
-  const vb=m.base||{hs:0,as:0};
-  $("vHomeScore").textContent=(m.hs??0)-(vb.hs??0); $("vAwayScore").textContent=(m.as??0)-(vb.as??0);
+  const bs=m.base||{hs:0,as:0};
+  $("vHomeScore").textContent=(m.hs??0)-(bs.hs??0); $("vAwayScore").textContent=(m.as??0)-(bs.as??0);
   $("vANum").textContent=(m.hs??0)+" − "+(m.as??0);
   const vg=sextosGanados(m.sx); $("vWHome").textContent=vg.h; $("vWAway").textContent=vg.a;
   $("vCrestHome").classList.toggle("hidden",m.crest!=="home");
