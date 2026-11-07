@@ -90,7 +90,7 @@ button{border:0;cursor:pointer;touch-action:manipulation}
       <div class="vdash">−</div>
       <div class="vteam"><div class="crestslot"><img id="vCrestAway" class="hidden" alt="Escudo del Araba"></div><div class="vname" id="vAway"></div><div class="vscore" id="vAwayScore">0</div></div>
     </div>
-    <div class="sextos hidden" id="vSx"></div>
+    <div class="sextos" id="vSx"></div>
     <div class="vperiod" id="vPeriod"></div>
     <div class="vdate" id="vDate"></div>
   </div>
@@ -131,7 +131,7 @@ button{border:0;cursor:pointer;touch-action:manipulation}
         <div class="note">−1 / +1 PUNTO</div>
       </div>
     </div>
-    <div class="sextos hidden" id="sxList"></div>
+    <div class="sextos" id="sxList"></div>
     <div class="panel">
       <div class="field"><label>ESCUDO ARABA</label></div>
       <div class="seg">
@@ -193,11 +193,9 @@ const namesOf = m => (m && m.fmt===6) ? PERIODOS_6 : PERIODOS_4;
 const PERIODOS = PERIODOS_6;
 const esSexto = i => (PERIODOS_6[i]||"").endsWith("sexto");
 const sxLabel = (names,i) => (names[i]||"").replace("º sexto","S").replace("º cuarto","C");
-function sxValidos(arr){ return (arr||[]).filter(s=>s.dhs!=null); }
 function sxHtml(arr,names){
-  return arr.slice().sort((a,b)=>a.p-b.p)
-    .filter(s=>s.dhs!=null)
-    .map(s=>`<div class="sx"><span class="l">${sxLabel(names,s.p)}</span><span class="s">${s.dhs}-${s.das}</span></div>`).join("");
+  const map={}; (arr||[]).forEach(s=>{ if(s.dhs!=null) map[s.p]=s.dhs+"-"+s.das; });
+  return [0,1,2,4,5,6].map(i=>`<div class="sx"><span class="l">${sxLabel(names,i)}</span><span class="s">${map[i]||"—"}</span></div>`).join("");
 }
 /* pasa un estado antiguo (cuartos) a sextos conservando el nombre del periodo */
 function aSextos(e){
@@ -252,7 +250,7 @@ function render(){
   $("crestLocal").classList.toggle("on",st.crest==="home");
   $("crestVisitante").classList.toggle("on",st.crest==="away");
   $("crestOculto").classList.toggle("on",st.crest==="off");
-  const sl=$("sxList"); sl.classList.toggle("hidden",!sxValidos(st.sx).length); sl.innerHTML=sxHtml(st.sx||[],PERIODOS_6);
+  const sl=$("sxList"); sl.innerHTML=sxHtml(st.sx||[],PERIODOS_6);
 }
 function renderHist(){
   const h=getHist();
@@ -393,7 +391,7 @@ function renderViewer(m){
   $("vCrestHome").classList.toggle("hidden",m.crest!=="home");
   $("vCrestAway").classList.toggle("hidden",m.crest!=="away");
   $("vPeriod").textContent=namesOf(m)[m.p]||"";
-  const vx=$("vSx"); vx.classList.toggle("hidden",!sxValidos(m.sx).length); vx.innerHTML=sxHtml(m.sx||[],namesOf(m));
+  const vx=$("vSx"); vx.innerHTML=sxHtml(m.sx||[],namesOf(m));
   $("vDate").textContent=m.fecha||"";
   const vb=$("vBadge");
   if(m.fin){ vb.className="badge off"; vb.textContent="FINALIZADO"; } else { vb.className="badge"; vb.innerHTML='<span class="dot"></span>EN DIRECTO'; }
