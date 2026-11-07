@@ -69,6 +69,11 @@ button{border:0;cursor:pointer;touch-action:manipulation}
 .seg button.on{background:#33454f;color:#fff;border-color:#54646f}
 .hist-item{display:flex;justify-content:space-between;gap:8px;background:var(--panel2);border-radius:12px;padding:11px 12px;margin-bottom:8px;font-size:14px;align-items:center}
 .hist-item .del{background:transparent;color:var(--muted);font-size:17px;padding:2px 6px}
+.sextos{display:flex;gap:6px;margin:0 0 12px;justify-content:center;flex-wrap:wrap}
+#viewer .sextos{margin:10px 0 0}
+.sx{min-width:48px;padding:4px 7px;border-radius:9px;background:#101a23;border:1px solid var(--line);text-align:center}
+.sx .l{display:block;color:var(--muted);font-size:10px;letter-spacing:.5px}
+.sx .s{display:block;font-weight:800;font-size:14px;font-variant-numeric:tabular-nums;margin-top:1px}
 .hidden{display:none!important}
 </style>
 </head>
@@ -85,6 +90,7 @@ button{border:0;cursor:pointer;touch-action:manipulation}
       <div class="vdash">−</div>
       <div class="vteam"><div class="crestslot"><img id="vCrestAway" class="hidden" alt="Escudo del Araba"></div><div class="vname" id="vAway"></div><div class="vscore" id="vAwayScore">0</div></div>
     </div>
+    <div class="sextos hidden" id="vSx"></div>
     <div class="vperiod" id="vPeriod"></div>
     <div class="vdate" id="vDate"></div>
   </div>
@@ -125,6 +131,7 @@ button{border:0;cursor:pointer;touch-action:manipulation}
         <div class="note">−1 / +1 PUNTO</div>
       </div>
     </div>
+    <div class="sextos hidden" id="sxList"></div>
     <div class="panel">
       <div class="field"><label>ESCUDO ARABA</label></div>
       <div class="seg">
@@ -184,6 +191,12 @@ const PERIODOS_4 = ["1º cuarto","2º cuarto","Descanso","3º cuarto","4º cuart
 const PERIODOS_6 = ["1º sexto","2º sexto","3º sexto","Descanso","4º sexto","5º sexto","6º sexto","Prórroga","Final"];
 const namesOf = m => (m && m.fmt===6) ? PERIODOS_6 : PERIODOS_4;
 const PERIODOS = PERIODOS_6;
+const esSexto = i => (PERIODOS_6[i]||"").endsWith("sexto");
+const sxLabel = (names,i) => (names[i]||"").replace("º sexto","S").replace("º cuarto","C");
+function sxHtml(arr,names){
+  return arr.slice().sort((a,b)=>a.p-b.p)
+    .map(s=>`<div class="sx"><span class="l">${sxLabel(names,s.p)}</span><span class="s">${s.hs}-${s.as}</span></div>`).join("");
+}
 /* pasa un estado antiguo (cuartos) a sextos conservando el nombre del periodo */
 function aSextos(e){
   if(!e || e.fmt===6) return e;
@@ -207,10 +220,10 @@ let live = { codigo:null, token:null, timer:null };
 
 function nuevoEstado(){
   return { fecha:new Date().toISOString().slice(0,10), comp:"", home:"Equipo local", away:"Equipo visitante",
-           hs:0, as:0, p:0, fmt:6, crest:cargaCrest() };
+           hs:0, as:0, p:0, fmt:6, sx:[], crest:cargaCrest() };
 }
 function estadoPublico(){
-  return { fecha:st.fecha, comp:st.comp, home:st.home, away:st.away, hs:st.hs, as:st.as, p:st.p, fmt:6, crest:st.crest };
+  return { fecha:st.fecha, comp:st.comp, home:st.home, away:st.away, hs:st.hs, as:st.as, p:st.p, fmt:6, sx:st.sx||[], crest:st.crest };
 }
 
 /* ===== Persistencia local (histórico) ===== */
@@ -232,6 +245,7 @@ function render(){
   $("crestLocal").classList.toggle("on",st.crest==="home");
   $("crestVisitante").classList.toggle("on",st.crest==="away");
   $("crestOculto").classList.toggle("on",st.crest==="off");
+  const sl=$("sxList"); sl.classList.toggle("hidden",!(st.sx||[]).length); sl.innerHTML=sxHtml(st.sx||[],PERIODOS_6);
 }
 function renderHist(){
   const h=getHist();
@@ -273,8 +287,11 @@ document.querySelectorAll(".scorebtn").forEach(btn=>{
   });
 });
 $("btnDeshacer").onclick=()=>{ const u=undoStack.pop(); if(u){ st.hs=u.hs; st.as=u.as; render(); pushLive(); } };
-$("pMinus").onclick=()=>{ st.p=Math.max(0,st.p-1); render(); pushLive(); };
-$("pPlus").onclick=()=>{ st.p=Math.min(PERIODOS.length-1,st.p+1); render(); pushLive(); };
+$("pMinus").onclick=()=>{ st.p=Math.max(0,st.p-1); st.sx=(st.sx||[]).filter(s=>s.p<st.p); render(); pushLive(); };
+$("pPlus").onclick=()=>{
+  if(esSexto(st.p)){ st.sx=(st.sx||[]).filter(s=>s.p!==st.p); st.sx.push({p:st.p,hs:st.hs,as:st.as}); }
+  st.p=Math.min(PERIODOS.length-1,st.p+1); render(); pushLive();
+};
 function setCrest(c){ st.crest=c; try{ localStorage.setItem(CKEY,c); }catch(e){} render(); pushLive(); }
 $("crestLocal").onclick=()=>setCrest("home");
 $("crestVisitante").onclick=()=>setCrest("away");
@@ -364,6 +381,7 @@ function renderViewer(m){
   $("vCrestHome").classList.toggle("hidden",m.crest!=="home");
   $("vCrestAway").classList.toggle("hidden",m.crest!=="away");
   $("vPeriod").textContent=namesOf(m)[m.p]||"";
+  const vx=$("vSx"); vx.classList.toggle("hidden",!(m.sx||[]).length); vx.innerHTML=sxHtml(m.sx||[],namesOf(m));
   $("vDate").textContent=m.fecha||"";
   const vb=$("vBadge");
   if(m.fin){ vb.className="badge off"; vb.textContent="FINALIZADO"; } else { vb.className="badge"; vb.innerHTML='<span class="dot"></span>EN DIRECTO'; }
