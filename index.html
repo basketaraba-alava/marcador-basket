@@ -193,17 +193,24 @@ const namesOf = m => (m && m.fmt===6) ? PERIODOS_6 : PERIODOS_4;
 const PERIODOS = PERIODOS_6;
 const esSexto = i => (PERIODOS_6[i]||"").endsWith("sexto");
 const sxLabel = (names,i) => (names[i]||"").replace("º sexto","S").replace("º cuarto","C");
+function sxValidos(arr){ return (arr||[]).filter(s=>s.dhs!=null); }
 function sxHtml(arr,names){
   return arr.slice().sort((a,b)=>a.p-b.p)
-    .map(s=>`<div class="sx"><span class="l">${sxLabel(names,s.p)}</span><span class="s">${s.hs}-${s.as}</span></div>`).join("");
+    .filter(s=>s.dhs!=null)
+    .map(s=>`<div class="sx"><span class="l">${sxLabel(names,s.p)}</span><span class="s">${s.dhs}-${s.das}</span></div>`).join("");
 }
 /* pasa un estado antiguo (cuartos) a sextos conservando el nombre del periodo */
 function aSextos(e){
-  if(!e || e.fmt===6) return e;
-  const n=PERIODOS_4[e.p]||PERIODOS_4[0];
-  const m=n.replace("cuarto","sexto");
-  const i=PERIODOS_6.indexOf(m);
-  return {...e, fmt:6, p:i>=0?i:0};
+  if(!e) return e;
+  let r = e;
+  if(e.fmt!==6){
+    const n=PERIODOS_4[e.p]||PERIODOS_4[0];
+    const m=n.replace("cuarto","sexto");
+    const i=PERIODOS_6.indexOf(m);
+    r = {...e, fmt:6, p:i>=0?i:0};
+  }
+  if(r.base===undefined) r.base=null;
+  return r;
 }
 const ARABA_CREST = "data:image/png;base64,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";
 const CKEY="mb_crest_v1";
@@ -216,14 +223,14 @@ const opKey  = qs.get("k");         // enlace de control (operador)
 /* ===== Estado del partido ===== */
 let st = nuevoEstado();
 let undoStack = [];
-let live = { codigo:null, token:null, timer:null };
+let live = { codigo:null, token:null, timer:null, listo:false };
 
 function nuevoEstado(){
   return { fecha:new Date().toISOString().slice(0,10), comp:"", home:"Equipo local", away:"Equipo visitante",
-           hs:0, as:0, p:0, fmt:6, sx:[], crest:cargaCrest() };
+           hs:0, as:0, p:0, fmt:6, sx:[], base:{hs:0,as:0}, crest:cargaCrest() };
 }
 function estadoPublico(){
-  return { fecha:st.fecha, comp:st.comp, home:st.home, away:st.away, hs:st.hs, as:st.as, p:st.p, fmt:6, sx:st.sx||[], crest:st.crest };
+  return { fecha:st.fecha, comp:st.comp, home:st.home, away:st.away, hs:st.hs, as:st.as, p:st.p, fmt:6, sx:st.sx||[], base:st.base??null, crest:st.crest };
 }
 
 /* ===== Persistencia local (histórico) ===== */
@@ -245,7 +252,7 @@ function render(){
   $("crestLocal").classList.toggle("on",st.crest==="home");
   $("crestVisitante").classList.toggle("on",st.crest==="away");
   $("crestOculto").classList.toggle("on",st.crest==="off");
-  const sl=$("sxList"); sl.classList.toggle("hidden",!(st.sx||[]).length); sl.innerHTML=sxHtml(st.sx||[],PERIODOS_6);
+  const sl=$("sxList"); sl.classList.toggle("hidden",!sxValidos(st.sx).length); sl.innerHTML=sxHtml(st.sx||[],PERIODOS_6);
 }
 function renderHist(){
   const h=getHist();
@@ -264,7 +271,7 @@ function renderHist(){
 
 /* ===== Envío en directo ===== */
 function pushLive(){
-  if(!live.codigo||!live.token||!LIVE) return;
+  if(!live.codigo||!live.token||!LIVE||!live.listo) return;
   clearTimeout(live.timer);
   live.timer=setTimeout(async ()=>{
     try{ await sb.rpc("actualizar_partido",{p_codigo:live.codigo,p_token:live.token,p_estado:estadoPublico()}); }catch(e){}
@@ -287,10 +294,15 @@ document.querySelectorAll(".scorebtn").forEach(btn=>{
   });
 });
 $("btnDeshacer").onclick=()=>{ const u=undoStack.pop(); if(u){ st.hs=u.hs; st.as=u.as; render(); pushLive(); } };
-$("pMinus").onclick=()=>{ st.p=Math.max(0,st.p-1); st.sx=(st.sx||[]).filter(s=>s.p<st.p); render(); pushLive(); };
+$("pMinus").onclick=()=>{ st.p=Math.max(0,st.p-1); st.sx=(st.sx||[]).filter(s=>s.p<st.p); st.base=null; render(); pushLive(); };
 $("pPlus").onclick=()=>{
-  if(esSexto(st.p)){ st.sx=(st.sx||[]).filter(s=>s.p!==st.p); st.sx.push({p:st.p,hs:st.hs,as:st.as}); }
-  st.p=Math.min(PERIODOS.length-1,st.p+1); render(); pushLive();
+  if(esSexto(st.p)){
+    st.sx=(st.sx||[]).filter(s=>s.p!==st.p);
+    st.sx.push({p:st.p, hs:st.hs, as:st.as, dhs:st.base?st.hs-st.base.hs:null, das:st.base?st.as-st.base.as:null});
+  }
+  st.p=Math.min(PERIODOS.length-1,st.p+1);
+  st.base={hs:st.hs,as:st.as};
+  render(); pushLive();
 };
 function setCrest(c){ st.crest=c; try{ localStorage.setItem(CKEY,c); }catch(e){} render(); pushLive(); }
 $("crestLocal").onclick=()=>setCrest("home");
@@ -302,9 +314,9 @@ $("fComp").oninput=e=>{ st.comp=e.target.value; pushLive(); };
 $("fHome").oninput=e=>{ st.home=e.target.value; pushLive(); };
 $("fAway").oninput=e=>{ st.away=e.target.value; pushLive(); };
 $("btnNuevo").onclick=async()=>{
-  if(live.codigo&&LIVE){
+  if(live.codigo&&LIVE&&live.listo){
     try{ await sb.rpc("actualizar_partido",{p_codigo:live.codigo,p_token:live.token,p_estado:{...estadoPublico(),fin:true}}); }catch(e){}
-    live={codigo:null,token:null,timer:null}; localStorage.removeItem(LKEY);
+    live={codigo:null,token:null,timer:null,listo:false}; localStorage.removeItem(LKEY);
     $("livePanel").style.display="none"; setBadge(false);
     history.replaceState(null,"",location.pathname);
   }
@@ -347,7 +359,7 @@ $("btnLive").onclick=async()=>{
   try{
     const {data,error}=await sb.rpc("crear_partido",{p_estado:estadoPublico()});
     if(error) throw error;
-    live.codigo=data.codigo; live.token=data.token;
+    live.codigo=data.codigo; live.token=data.token; live.listo=true;
     guardaLiveLocal(); activarLive();
   }catch(e){ alert("No se pudo crear el enlace en directo."); }
   $("btnLive").textContent="📡 Compartir marcador en directo";
@@ -357,7 +369,7 @@ function activarLive(){
   const link=base+"?p="+live.codigo;
   $("liveLink").textContent=link;
   $("livePanel").style.display="block";
-  setBadge(true); pushLive();
+  setBadge(true);
   history.replaceState(null,"",base+"?p="+live.codigo+"&k="+live.token);
 }
 $("btnCopiar").onclick=async()=>{
@@ -367,8 +379,8 @@ $("btnCopiar").onclick=async()=>{
   const b=$("btnCopiar"); b.textContent="✓ Copiado"; setTimeout(()=>b.textContent="Copiar enlace",1200);
 };
 $("btnStopLive").onclick=async()=>{
-  if(live.codigo&&LIVE){ try{ await sb.rpc("actualizar_partido",{p_codigo:live.codigo,p_token:live.token,p_estado:{...estadoPublico(),fin:true}}); }catch(e){} }
-  live={codigo:null,token:null,timer:null}; localStorage.removeItem(LKEY);
+  if(live.codigo&&LIVE&&live.listo){ try{ await sb.rpc("actualizar_partido",{p_codigo:live.codigo,p_token:live.token,p_estado:{...estadoPublico(),fin:true}}); }catch(e){} }
+  live={codigo:null,token:null,timer:null,listo:false}; localStorage.removeItem(LKEY);
   $("livePanel").style.display="none"; setBadge(false);
   history.replaceState(null,"",location.pathname);
 };
@@ -381,7 +393,7 @@ function renderViewer(m){
   $("vCrestHome").classList.toggle("hidden",m.crest!=="home");
   $("vCrestAway").classList.toggle("hidden",m.crest!=="away");
   $("vPeriod").textContent=namesOf(m)[m.p]||"";
-  const vx=$("vSx"); vx.classList.toggle("hidden",!(m.sx||[]).length); vx.innerHTML=sxHtml(m.sx||[],namesOf(m));
+  const vx=$("vSx"); vx.classList.toggle("hidden",!sxValidos(m.sx).length); vx.innerHTML=sxHtml(m.sx||[],namesOf(m));
   $("vDate").textContent=m.fecha||"";
   const vb=$("vBadge");
   if(m.fin){ vb.className="badge off"; vb.textContent="FINALIZADO"; } else { vb.className="badge"; vb.innerHTML='<span class="dot"></span>EN DIRECTO'; }
@@ -412,21 +424,29 @@ if(viewCode && !opKey){
     // Enlace de control: recuperar emisión en este dispositivo
     live.codigo=viewCode; live.token=opKey; guardaLiveLocal();
     (async()=>{
-      if(LIVE){
-        const {data}=await sb.from("partidos").select("estado").eq("codigo",viewCode).maybeSingle();
-        if(data&&data.estado){ st={...nuevoEstado(),...aSextos(data.estado)}; }
-      }
-      render(); activarLive();
+      let ok=false;
+      try{
+        if(LIVE){
+          const {data}=await sb.from("partidos").select("estado").eq("codigo",viewCode).maybeSingle();
+          if(data&&data.estado){ st={...nuevoEstado(),...aSextos(data.estado)}; live.listo=true; ok=true; }
+        }
+      }catch(e){}
+      render();
+      if(ok){ activarLive(); }
+      else{ alert("No se pudo cargar el partido en curso. Comprueba la cobertura y vuelve a cargar la página."); }
     })();
   }else{
     const l=cargaLiveLocal();
     if(l&&l.codigo&&LIVE){ live.codigo=l.codigo; live.token=l.token;
       (async()=>{
+        let ok=false;
         try{
           const {data}=await sb.from("partidos").select("estado").eq("codigo",l.codigo).maybeSingle();
-          if(data&&data.estado){ st={...nuevoEstado(),...aSextos(data.estado)}; }
+          if(data&&data.estado){ st={...nuevoEstado(),...aSextos(data.estado)}; live.listo=true; ok=true; }
         }catch(e){}
-        render(); activarLive();
+        render();
+        if(ok){ activarLive(); }
+        else{ alert("No se pudo recuperar la emisión en curso. Comprueba la cobertura y vuelve a cargar la página."); }
       })();
     }
   }
