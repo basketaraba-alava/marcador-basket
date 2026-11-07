@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0d141b">
+<title>Marcador Basket 3 en Directo</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{color-scheme:dark;--bg:#0d141b;--panel:#18242f;--panel2:#1f2f3d;--muted:#93a5b4;--line:#2c3d4c;--blue:#3a7bf6;--red:#e05555;--green:#35b26f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) 14px calc(14px + env(safe-area-inset-bottom));max-width:720px;margin-inline:auto}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 2px 10px}
+h1{font-size:20px;margin:0}
+button,input{font:inherit}
+button{border:0;cursor:pointer;touch-action:manipulation}
+.tabs{display:flex;background:#14202a;padding:4px;border-radius:14px;gap:4px;margin:8px 0 14px}
+.tabs button{flex:1;background:transparent;color:var(--muted);padding:11px 4px;border-radius:10px;font-weight:700}
+.tabs button.active{background:#33454f;color:#fff}
+.panel{background:var(--panel);border-radius:18px;padding:16px;margin-bottom:12px}
+.fields{display:grid;grid-template-columns:122px minmax(0,1fr);gap:8px;align-items:start}
+.field label{display:block;color:var(--muted);font-size:11px;line-height:14px;height:14px;margin:0 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.field input{width:100%;border:1px solid var(--line);background:#101a23;color:#fff;padding:0 11px;height:44px;box-sizing:border-box;line-height:42px;border-radius:10px;min-width:0;font-size:14px}
+.field input[type=date]{-webkit-appearance:none;appearance:none;padding:0 6px;font-size:13px;text-align:left;display:block;min-height:44px}
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.team{border-radius:16px;padding:14px 9px;text-align:center;background:#22354a;min-width:0}
+.team.away{background:#372f3b}
+.team-name{width:100%;background:transparent;color:#fff;border:0;text-align:center;font-size:16px;font-weight:800;padding:5px 0;outline:none}
+.score{font-size:clamp(58px,16vw,88px);font-weight:850;line-height:1.2;font-variant-numeric:tabular-nums;margin:6px 0 10px}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.scorebtn{height:56px;border-radius:13px;font-size:27px;font-weight:800;color:#fff}
+.minus{background:#54646f}
+.plus.home{background:var(--blue)}
+.plus.away{background:var(--red)}
+.periodo{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.periodo button{width:46px;height:46px;border-radius:12px;background:#54646f;color:#fff;font-size:22px;font-weight:800}
+.periodo .pname{font-weight:800;font-size:17px}
+.periodo .plabel{color:var(--muted);font-size:11px;text-align:center;letter-spacing:1px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.action{padding:14px;border-radius:13px;font-weight:700;font-size:15px}
+.action.primary{background:#fff;color:#0d141b}
+.action.dark{background:#22313f;color:#fff}
+.action.live{background:var(--green);color:#fff}
+.note{color:var(--muted);font-size:12px;text-align:center;margin:8px 0 0}
+.livepanel{border:1px solid var(--green);border-radius:14px;padding:12px;margin-top:12px;display:none}
+.livepanel .link{word-break:break-all;font-size:13px;background:#101a23;border-radius:8px;padding:9px;margin:8px 0;color:#9fdcb9}
+.livepanel .row{display:flex;gap:8px}
+.livepanel button{flex:1;padding:10px;border-radius:10px;font-weight:700;font-size:14px}
+.badge{display:inline-block;background:var(--green);color:#04240f;font-weight:800;font-size:11px;border-radius:999px;padding:3px 10px;letter-spacing:1px}
+.badge.off{background:#54646f;color:#dfe7ec}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#04240f;margin-right:5px;animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.25}}
+/* Vista espectador */
+#viewer{display:none}
+#viewer .vcomp{color:var(--muted);text-align:center;font-size:13px;margin-bottom:2px}
+#viewer .vteams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;margin-top:10px}
+#viewer .vteam{text-align:center;min-width:0}
+#viewer .vname{font-size:16px;font-weight:800;word-break:break-word}
+#viewer .vscore{font-size:clamp(64px,19vw,110px);font-weight:850;font-variant-numeric:tabular-nums;line-height:1.15}
+#viewer .vdash{color:var(--muted);font-size:30px;font-weight:800}
+#viewer .vperiod{text-align:center;margin-top:12px;font-size:17px;font-weight:800}
+#viewer .vdate{color:var(--muted);text-align:center;font-size:12px;margin-top:6px}
+.crestslot{height:46px;display:flex;align-items:center;justify-content:center}
+.crestslot img{width:42px;height:42px;border-radius:9px}
+#viewer .crestslot{height:62px}
+#viewer .crestslot img{width:58px;height:58px;border-radius:12px}
+.seg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.seg button{padding:10px 4px;border-radius:10px;background:#101a23;color:var(--muted);font-weight:700;font-size:13px;border:1px solid var(--line)}
+.seg button.on{background:#33454f;color:#fff;border-color:#54646f}
+.hist-item{display:flex;justify-content:space-between;gap:8px;background:var(--panel2);border-radius:12px;padding:11px 12px;margin-bottom:8px;font-size:14px;align-items:center}
+.hist-item .del{background:transparent;color:var(--muted);font-size:17px;padding:2px 6px}
+.sextos{display:flex;gap:6px;margin:0 0 12px;justify-content:center;flex-wrap:wrap}
+#viewer .sextos{margin:10px 0 0}
+.sx{min-width:48px;padding:4px 7px;border-radius:9px;background:#101a23;border:1px solid var(--line);text-align:center}
+.sx .l{display:block;color:var(--muted);font-size:10px;letter-spacing:.5px}
+.sx .s{display:block;font-weight:800;font-size:14px;font-variant-numeric:tabular-nums;margin-top:1px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<header><h1>🏀 Marcador Basket 3</h1><span id="liveBadge" class="badge off">SIN EMITIR</span></header>
+
+<!-- ============ VISTA ESPECTADOR ============ -->
+<div id="viewer">
+  <div class="panel">
+    <div style="text-align:center"><span class="badge" id="vBadge"><span class="dot"></span>EN DIRECTO</span></div>
+    <div class="vcomp" id="vComp"></div>
+    <div class="vteams">
+      <div class="vteam"><div class="crestslot"><img id="vCrestHome" class="hidden" alt="Escudo del Araba"></div><div class="vname" id="vHome"></div><div class="vscore" id="vHomeScore">0</div></div>
+      <div class="vdash">−</div>
+      <div class="vteam"><div class="crestslot"><img id="vCrestAway" class="hidden" alt="Escudo del Araba"></div><div class="vname" id="vAway"></div><div class="vscore" id="vAwayScore">0</div></div>
+    </div>
+    <div class="sextos" id="vSx"></div>
+    <div class="vperiod" id="vPeriod"></div>
+    <div class="vdate" id="vDate"></div>
+  </div>
+  <p class="note">El tanteo se actualiza solo. Solo lectura.</p>
+</div>
+
+<!-- ============ VISTA OPERADOR ============ -->
+<div id="operator">
+  <div class="tabs">
+    <button id="tabPartido" class="active">Partido</button>
+    <button id="tabHistorico">Histórico <span id="histCount">0</span></button>
+  </div>
+
+  <div id="panePartido">
+    <div class="panel fields">
+      <div class="field"><label>FECHA DEL PARTIDO</label><input type="date" id="fFecha"></div>
+      <div class="field"><label>COMPETICIÓN (opcional)</label><input type="text" id="fComp" placeholder="Liga, amistoso..."></div>
+    </div>
+    <div class="panel teams">
+      <div class="team">
+        <div class="crestslot"><img id="crestHome" class="hidden" alt="Escudo del Araba"></div>
+        <input class="team-name" id="fHome" value="Equipo local">
+        <div class="score" id="sHome">0</div>
+        <div class="controls">
+          <button class="scorebtn minus" data-team="home" data-d="-1">−</button>
+          <button class="scorebtn plus home" data-team="home" data-d="1">+</button>
+        </div>
+        <div class="note">−1 / +1 PUNTO</div>
+      </div>
+      <div class="team away">
+        <div class="crestslot"><img id="crestAway" class="hidden" alt="Escudo del Araba"></div>
+        <input class="team-name" id="fAway" value="Equipo visitante">
+        <div class="score" id="sAway">0</div>
+        <div class="controls">
+          <button class="scorebtn minus" data-team="away" data-d="-1">−</button>
+          <button class="scorebtn plus away" data-team="away" data-d="1">+</button>
+        </div>
+        <div class="note">−1 / +1 PUNTO</div>
+      </div>
+    </div>
+    <div class="sextos" id="sxList"></div>
+    <div class="panel">
+      <div class="field"><label>ESCUDO ARABA</label></div>
+      <div class="seg">
+        <button id="crestLocal">Local</button>
+        <button id="crestVisitante">Visitante</button>
+        <button id="crestOculto">Oculto</button>
+      </div>
+    </div>
+    <div class="panel periodo">
+      <button id="pMinus">−</button>
+      <div><div class="plabel">PERIODO</div><div class="pname" id="pName">1º sexto</div></div>
+      <button id="pPlus">+</button>
+    </div>
+    <div class="row2">
+      <button class="action primary" id="btnGuardar">Guardar resultado</button>
+      <button class="action dark" id="btnDeshacer">↶ Deshacer punto</button>
+    </div>
+    <p class="note">Los partidos guardados quedan en el histórico de este dispositivo.</p>
+    <div class="row2" style="margin-top:8px">
+      <button class="action dark" id="btnNuevo">Nuevo partido</button>
+      <button class="action dark" id="btnExportar">Exportar histórico</button>
+    </div>
+    <div class="panel" style="margin-top:12px">
+      <button class="action live" id="btnLive" style="width:100%">📡 Compartir marcador en directo</button>
+      <div class="livepanel" id="livePanel">
+        <div style="font-weight:700;font-size:14px">Enlace para espectadores (solo lectura):</div>
+        <div class="link" id="liveLink"></div>
+        <div class="row">
+          <button class="action primary" id="btnCopiar">Copiar enlace</button>
+          <button class="action dark" id="btnStopLive" style="flex:.6">Dejar de emitir</button>
+        </div>
+        <p class="note" style="text-align:left">Quien abra el enlace verá el tanteo actualizarse solo, sin poder modificarlo. Tu enlace de control (con permiso de edición) queda guardado en este dispositivo.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="paneHistorico" class="hidden">
+    <div class="panel">
+      <div class="field"><label>RESULTADOS BASKETARABA</label></div>
+      <button class="action dark" id="btnImportar" style="width:100%">Importar resultados del Toyota Armentia Araba</button>
+      <p class="note" style="text-align:left">Añade al histórico los resultados oficiales del Toyota Armentia Araba (Alevín Fem. 2º Año, Grupo C) publicados en basketaraba.com. No borra los partidos que hayas guardado tú.</p>
+    </div>
+    <div id="histList"></div>
+    <p class="note" id="histVacio">Todavía no hay partidos guardados.</p>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ===== Configuración del backend en directo (Supabase) ===== */
+const SB_URL = "https://xwbzzbdfvmriysvmugon.supabase.co";
+const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3Ynp6YmRmdm1yaXlzdm11Z29uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM0NDEwODksImV4cCI6MjEwOTAxNzA4OX0.o5irb7Jx15ZyYugECgru-zfYidKSoZvAwFxsJapt_D8";
+const LIVE = SB_URL.startsWith("https://");
+const sb = LIVE ? supabase.createClient(SB_URL, SB_ANON) : null;
+
+const PERIODOS_4 = ["1º cuarto","2º cuarto","Descanso","3º cuarto","4º cuarto","Prórroga","Final"];
+const PERIODOS_6 = ["1º sexto","2º sexto","3º sexto","Descanso","4º sexto","5º sexto","6º sexto","Prórroga","Final"];
+const namesOf = m => (m && m.fmt===6) ? PERIODOS_6 : PERIODOS_4;
+const PERIODOS = PERIODOS_6;
+const esSexto = i => (PERIODOS_6[i]||"").endsWith("sexto");
+const sxLabel = (names,i) => (names[i]||"").replace("º sexto","S").replace("º cuarto","C");
+function sxHtml(arr,names){
+  const map={}; (arr||[]).forEach(s=>{ if(s.dhs!=null) map[s.p]=s.dhs+"-"+s.das; });
+  return [0,1,2,4,5,6].map(i=>`<div class="sx"><span class="l">${sxLabel(names,i)}</span><span class="s">${map[i]||"—"}</span></div>`).join("");
+}
+/* pasa un estado antiguo (cuartos) a sextos conservando el nombre del periodo */
+function aSextos(e){
+  if(!e) return e;
+  let r = e;
+  if(e.fmt!==6){
+    const n=PERIODOS_4[e.p]||PERIODOS_4[0];
+    const m=n.replace("cuarto","sexto");
+    const i=PERIODOS_6.indexOf(m);
+    r = {...e, fmt:6, p:i>=0?i:0};
+  }
+  if(r.base===undefined) r.base=null;
+  return r;
+}
+const ARABA_CREST = "data:image/png;base64,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";
+const CKEY="mb3_crest_v1";
+function cargaCrest(){ try{const c=localStorage.getItem(CKEY); return (c==="home"||c==="away"||c==="off")?c:"home"; }catch(e){ return "home"; } }
+const $ = id => document.getElementById(id);
+const qs = new URLSearchParams(location.search);
+const viewCode = qs.get("p");       // enlace de espectador
+const opKey  = qs.get("k");         // enlace de control (operador)
+
+/* ===== Estado del partido ===== */
+let st = nuevoEstado();
+let undoStack = [];
+let live = { codigo:null, token:null, timer:null, listo:false };
+
+function nuevoEstado(){
+  return { fecha:new Date().toISOString().slice(0,10), comp:"", home:"Equipo local", away:"Equipo visitante",
+           hs:0, as:0, p:0, fmt:6, sx:[], base:{hs:0,as:0}, crest:cargaCrest() };
+}
+function estadoPublico(){
+  return { fecha:st.fecha, comp:st.comp, home:st.home, away:st.away, hs:st.hs, as:st.as, p:st.p, fmt:6, sx:st.sx||[], base:st.base??null, crest:st.crest };
+}
+
+/* ===== Persistencia local (histórico) ===== */
+const HKEY="mb3_historico_v1", LKEY="mb3_live_v1";
+function getHist(){ try{return JSON.parse(localStorage.getItem(HKEY))||[]}catch(e){return[]} }
+function setHist(h){ localStorage.setItem(HKEY,JSON.stringify(h)); renderHist(); }
+function guardaLiveLocal(){ localStorage.setItem(LKEY,JSON.stringify({codigo:live.codigo,token:live.token})); }
+function cargaLiveLocal(){ try{return JSON.parse(localStorage.getItem(LKEY))||null}catch(e){return null} }
+
+/* ===== Render operador ===== */
+function render(){
+  $("fFecha").value=st.fecha; $("fComp").value=st.comp;
+  if(document.activeElement!==$("fHome")) $("fHome").value=st.home;
+  if(document.activeElement!==$("fAway")) $("fAway").value=st.away;
+  $("sHome").textContent=st.hs; $("sAway").textContent=st.as;
+  $("pName").textContent=PERIODOS_6[st.p]||PERIODOS_6[0];
+  $("crestHome").classList.toggle("hidden",st.crest!=="home");
+  $("crestAway").classList.toggle("hidden",st.crest!=="away");
+  $("crestLocal").classList.toggle("on",st.crest==="home");
+  $("crestVisitante").classList.toggle("on",st.crest==="away");
+  $("crestOculto").classList.toggle("on",st.crest==="off");
+  const sl=$("sxList"); sl.innerHTML=sxHtml(st.sx||[],PERIODOS_6);
+}
+function renderHist(){
+  const h=getHist();
+  $("histCount").textContent=h.length;
+  $("histVacio").classList.toggle("hidden",h.length>0);
+  $("histList").innerHTML="";
+  h.forEach((m,i)=>{
+    const d=document.createElement("div"); d.className="hist-item";
+    const t=document.createElement("span");
+    t.textContent=`${m.fecha} · ${m.home} ${m.hs} - ${m.as} ${m.away}`+(m.comp?` · ${m.comp}`:"");
+    const b=document.createElement("button"); b.className="del"; b.textContent="🗑";
+    b.onclick=()=>{ const x=getHist(); x.splice(i,1); setHist(x); };
+    d.append(t,b); $("histList").appendChild(d);
+  });
+}
+
+/* ===== Envío en directo ===== */
+function pushLive(){
+  if(!live.codigo||!live.token||!LIVE||!live.listo) return;
+  clearTimeout(live.timer);
+  live.timer=setTimeout(async ()=>{
+    try{ await sb.rpc("actualizar_partido",{p_codigo:live.codigo,p_token:live.token,p_estado:estadoPublico()}); }catch(e){}
+  },350);
+}
+function setBadge(on){
+  const b=$("liveBadge");
+  b.textContent=on?"EMITIENDO":"SIN EMITIR";
+  b.className=on?"badge":"badge off";
+  if(on){ const d=document.createElement("span"); d.className="dot"; b.prepend(d); }
+}
+
+/* ===== Acciones operador ===== */
+document.querySelectorAll(".scorebtn").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    undoStack.push({hs:st.hs,as:st.as});
+    const d=parseInt(btn.dataset.d,10);
+    if(btn.dataset.team==="home") st.hs=Math.max(0,st.hs+d); else st.as=Math.max(0,st.as+d);
+    render(); pushLive();
+  });
+});
+$("btnDeshacer").onclick=()=>{ const u=undoStack.pop(); if(u){ st.hs=u.hs; st.as=u.as; render(); pushLive(); } };
+$("pMinus").onclick=()=>{ st.p=Math.max(0,st.p-1); st.sx=(st.sx||[]).filter(s=>s.p<st.p); st.base=null; render(); pushLive(); };
+$("pPlus").onclick=()=>{
+  if(esSexto(st.p)){
+    st.sx=(st.sx||[]).filter(s=>s.p!==st.p);
+    st.sx.push({p:st.p, hs:st.hs, as:st.as, dhs:st.base?st.hs-st.base.hs:null, das:st.base?st.as-st.base.as:null});
+  }
+  st.p=Math.min(PERIODOS.length-1,st.p+1);
+  st.base={hs:st.hs,as:st.as};
+  render(); pushLive();
+};
+function setCrest(c){ st.crest=c; try{ localStorage.setItem(CKEY,c); }catch(e){} render(); pushLive(); }
+$("crestLocal").onclick=()=>setCrest("home");
+$("crestVisitante").onclick=()=>setCrest("away");
+$("crestOculto").onclick=()=>setCrest("off");
+["crestHome","crestAway","vCrestHome","vCrestAway"].forEach(id=>{ const e=$(id); if(e) e.src=ARABA_CREST; });
+$("fFecha").onchange=e=>{ st.fecha=e.target.value; pushLive(); };
+$("fComp").oninput=e=>{ st.comp=e.target.value; pushLive(); };
+$("fHome").oninput=e=>{ st.home=e.target.value; pushLive(); };
+$("fAway").oninput=e=>{ st.away=e.target.value; pushLive(); };
+$("btnNuevo").onclick=async()=>{
+  if(live.codigo&&LIVE&&live.listo){
+    try{ await sb.rpc("actualizar_partido",{p_codigo:live.codigo,p_token:live.token,p_estado:{...estadoPublico(),fin:true}}); }catch(e){}
+    live={codigo:null,token:null,timer:null,listo:false}; localStorage.removeItem(LKEY);
+    $("livePanel").style.display="none"; setBadge(false);
+    history.replaceState(null,"",location.pathname);
+  }
+  st=nuevoEstado(); undoStack=[]; render();
+};
+$("btnGuardar").onclick=()=>{
+  const h=getHist(); h.unshift({...estadoPublico(),pname:PERIODOS_6[st.p]}); setHist(h);
+  const b=$("btnGuardar"); b.textContent="✓ Guardado"; setTimeout(()=>b.textContent="Guardar resultado",1200);
+};
+$("btnExportar").onclick=()=>{
+  const h=getHist();
+  const csv="fecha;competicion;local;puntos_local;puntos_visitante;visitante;periodo\n"+
+    h.map(m=>[m.fecha,m.comp||"",m.home,m.hs,m.as,m.away,m.pname||""].join(";")).join("\n");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download="historico_marcador.csv"; a.click();
+};
+/* ===== Importar resultados oficiales (Basketaraba, 31-10-2026) ===== */
+const IMPORT_BASKETARABA=[
+  {fecha:"2026-10-25",comp:"Alevín Fem. 2º Año Grupo C · Basketaraba",home:"AMETS SUGARRAK LAUDIO",hs:8,as:48,away:"TOYOTA ARMENTIA ARABA",pname:"Final"}
+];
+$("btnImportar").onclick=()=>{
+  const h=getHist();
+  const clave=m=>[m.fecha,m.home,m.hs,m.as,m.away].join("|");
+  const ya=new Set(h.map(clave));
+  const nuevos=IMPORT_BASKETARABA.filter(m=>!ya.has(clave(m)));
+  if(nuevos.length) setHist(nuevos.concat(h));
+  const b=$("btnImportar");
+  b.textContent=nuevos.length?("✓ "+nuevos.length+" resultado(s) importado(s)"):"✓ Ya estaban importados";
+  setTimeout(()=>b.textContent="Importar resultados del Toyota Armentia Araba",2200);
+};
+$("tabPartido").onclick=()=>{ $("tabPartido").classList.add("active"); $("tabHistorico").classList.remove("active"); $("panePartido").classList.remove("hidden"); $("paneHistorico").classList.add("hidden"); };
+$("tabHistorico").onclick=()=>{ $("tabHistorico").classList.add("active"); $("tabPartido").classList.remove("active"); $("paneHistorico").classList.remove("hidden"); $("panePartido").classList.add("hidden"); renderHist(); };
+
+/* ===== Emitir en directo ===== */
+$("btnLive").onclick=async()=>{
+  if(!LIVE){ alert("El servicio en directo no está configurado en esta copia."); return; }
+  if(live.codigo){ $("livePanel").style.display="block"; return; }
+  $("btnLive").textContent="Creando enlace...";
+  try{
+    const {data,error}=await sb.rpc("crear_partido",{p_estado:estadoPublico()});
+    if(error) throw error;
+    live.codigo=data.codigo; live.token=data.token; live.listo=true;
+    guardaLiveLocal(); activarLive();
+  }catch(e){ alert("No se pudo crear el enlace en directo."); }
+  $("btnLive").textContent="📡 Compartir marcador en directo";
+};
+function activarLive(){
+  const base=location.origin+location.pathname;
+  const link=base+"?p="+live.codigo;
+  $("liveLink").textContent=link;
+  $("livePanel").style.display="block";
+  setBadge(true);
+  history.replaceState(null,"",base+"?p="+live.codigo+"&k="+live.token);
+}
+$("btnCopiar").onclick=async()=>{
+  const link=$("liveLink").textContent;
+  try{ await navigator.clipboard.writeText(link); }catch(e){}
+  if(navigator.share){ try{ await navigator.share({title:"Marcador en directo",url:link}); }catch(e){} }
+  const b=$("btnCopiar"); b.textContent="✓ Copiado"; setTimeout(()=>b.textContent="Copiar enlace",1200);
+};
+$("btnStopLive").onclick=async()=>{
+  if(live.codigo&&LIVE&&live.listo){ try{ await sb.rpc("actualizar_partido",{p_codigo:live.codigo,p_token:live.token,p_estado:{...estadoPublico(),fin:true}}); }catch(e){} }
+  live={codigo:null,token:null,timer:null,listo:false}; localStorage.removeItem(LKEY);
+  $("livePanel").style.display="none"; setBadge(false);
+  history.replaceState(null,"",location.pathname);
+};
+
+/* ===== Vista espectador ===== */
+function renderViewer(m){
+  $("vComp").textContent=m.comp||"";
+  $("vHome").textContent=m.home||"Local"; $("vAway").textContent=m.away||"Visitante";
+  $("vHomeScore").textContent=m.hs??0; $("vAwayScore").textContent=m.as??0;
+  $("vCrestHome").classList.toggle("hidden",m.crest!=="home");
+  $("vCrestAway").classList.toggle("hidden",m.crest!=="away");
+  $("vPeriod").textContent=namesOf(m)[m.p]||"";
+  const vx=$("vSx"); vx.innerHTML=sxHtml(m.sx||[],namesOf(m));
+  $("vDate").textContent=m.fecha||"";
+  const vb=$("vBadge");
+  if(m.fin){ vb.className="badge off"; vb.textContent="FINALIZADO"; } else { vb.className="badge"; vb.innerHTML='<span class="dot"></span>EN DIRECTO'; }
+  document.title=`${m.hs??0}-${m.as??0} · Marcador en directo`;
+}
+async function iniciarViewer(code){
+  $("operator").style.display="none"; $("viewer").style.display="block"; $("liveBadge").classList.add("hidden");
+  if(!LIVE){ $("vPeriod").textContent="Servicio no configurado"; return; }
+  const {data}=await sb.from("partidos").select("estado").eq("codigo",code).maybeSingle();
+  if(data&&data.estado) renderViewer(data.estado);
+  else $("vPeriod").textContent="Partido no encontrado";
+  sb.channel("partido:"+code)
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"partidos",filter:"codigo=eq."+code},
+        p=>{ if(p.new&&p.new.estado) renderViewer(p.new.estado); })
+    .subscribe();
+  // Refresco de seguridad por si el realtime se corta
+  setInterval(async()=>{
+    const r=await sb.from("partidos").select("estado").eq("codigo",code).maybeSingle();
+    if(r.data&&r.data.estado) renderViewer(r.data.estado);
+  },20000);
+}
+
+/* ===== Arranque ===== */
+if(viewCode && !opKey){
+  iniciarViewer(viewCode);
+}else{
+  if(opKey && viewCode){
+    // Enlace de control: recuperar emisión en este dispositivo
+    live.codigo=viewCode; live.token=opKey; guardaLiveLocal();
+    (async()=>{
+      let ok=false;
+      try{
+        if(LIVE){
+          const {data}=await sb.from("partidos").select("estado").eq("codigo",viewCode).maybeSingle();
+          if(data&&data.estado){ st={...nuevoEstado(),...aSextos(data.estado)}; live.listo=true; ok=true; }
+        }
+      }catch(e){}
+      render();
+      if(ok){ activarLive(); }
+      else{ alert("No se pudo cargar el partido en curso. Comprueba la cobertura y vuelve a cargar la página."); }
+    })();
+  }else{
+    const l=cargaLiveLocal();
+    if(l&&l.codigo&&LIVE){ live.codigo=l.codigo; live.token=l.token;
+      (async()=>{
+        let ok=false;
+        try{
+          const {data}=await sb.from("partidos").select("estado").eq("codigo",l.codigo).maybeSingle();
+          if(data&&data.estado){ st={...nuevoEstado(),...aSextos(data.estado)}; live.listo=true; ok=true; }
+        }catch(e){}
+        render();
+        if(ok){ activarLive(); }
+        else{ alert("No se pudo recuperar la emisión en curso. Comprueba la cobertura y vuelve a cargar la página."); }
+      })();
+    }
+  }
+  render(); renderHist();
+}
+</script>
+</body>
+</html>
