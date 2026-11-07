@@ -79,6 +79,11 @@ button{border:0;cursor:pointer;touch-action:manipulation}
 .setslbl{color:var(--muted);font-size:10px;font-weight:800;letter-spacing:1px;text-align:center}
 #viewer .setsrow{margin:2px 0 0}
 #viewer .setsnum{font-size:clamp(46px,13vw,72px)}
+.arrastrado{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px;margin:0 0 12px}
+.arrastrado .anum{font-size:clamp(34px,9.5vw,50px);font-weight:850;font-variant-numeric:tabular-nums;line-height:1.15}
+.arrastrado .albl,.scorelbl{color:var(--muted);font-size:10px;font-weight:800;letter-spacing:1px}
+.scorelbl{margin:-4px 0 6px}
+#viewer .arrastrado{margin:12px 0 0}
 .hidden{display:none!important}
 </style>
 </head>
@@ -91,10 +96,11 @@ button{border:0;cursor:pointer;touch-action:manipulation}
     <div style="text-align:center"><span class="badge" id="vBadge"><span class="dot"></span>EN DIRECTO</span></div>
     <div class="vcomp" id="vComp"></div>
     <div class="vteams">
-      <div class="vteam"><div class="crestslot"><img id="vCrestHome" class="hidden" alt="Escudo del Araba"></div><div class="vname" id="vHome"></div><div class="vscore" id="vHomeScore">0</div><div class="setsrow"><span class="setsnum" id="vWHome">0</span><span class="setslbl">PUNTOS POR SEXTOS</span></div></div>
+      <div class="vteam"><div class="crestslot"><img id="vCrestHome" class="hidden" alt="Escudo del Araba"></div><div class="vname" id="vHome"></div><div class="vscore" id="vHomeScore">0</div><div class="scorelbl">TANTEO DEL SEXTO</div><div class="setsrow"><span class="setsnum" id="vWHome">0</span><span class="setslbl">PUNTOS POR SEXTOS</span></div></div>
       <div class="vdash">−</div>
-      <div class="vteam"><div class="crestslot"><img id="vCrestAway" class="hidden" alt="Escudo del Araba"></div><div class="vname" id="vAway"></div><div class="vscore" id="vAwayScore">0</div><div class="setsrow"><span class="setsnum" id="vWAway">0</span><span class="setslbl">PUNTOS POR SEXTOS</span></div></div>
+      <div class="vteam"><div class="crestslot"><img id="vCrestAway" class="hidden" alt="Escudo del Araba"></div><div class="vname" id="vAway"></div><div class="vscore" id="vAwayScore">0</div><div class="scorelbl">TANTEO DEL SEXTO</div><div class="setsrow"><span class="setsnum" id="vWAway">0</span><span class="setslbl">PUNTOS POR SEXTOS</span></div></div>
     </div>
+    <div class="arrastrado"><span class="anum" id="vANum">0 − 0</span><span class="albl">TANTEO ARRASTRADO</span></div>
     <div class="sextos" id="vSx"></div>
     <div class="vperiod" id="vPeriod"></div>
     <div class="vdate" id="vDate"></div>
@@ -119,6 +125,7 @@ button{border:0;cursor:pointer;touch-action:manipulation}
         <div class="crestslot"><img id="crestHome" class="hidden" alt="Escudo del Araba"></div>
         <input class="team-name" id="fHome" value="Equipo local">
         <div class="score" id="sHome">0</div>
+        <div class="scorelbl">TANTEO DEL SEXTO</div>
         <div class="setsrow"><span class="setsnum" id="wHome">0</span><span class="setslbl">PUNTOS POR SEXTOS</span></div>
         <div class="controls">
           <button class="scorebtn minus" data-team="home" data-d="-1">−</button>
@@ -130,6 +137,7 @@ button{border:0;cursor:pointer;touch-action:manipulation}
         <div class="crestslot"><img id="crestAway" class="hidden" alt="Escudo del Araba"></div>
         <input class="team-name" id="fAway" value="Equipo visitante">
         <div class="score" id="sAway">0</div>
+        <div class="scorelbl">TANTEO DEL SEXTO</div>
         <div class="setsrow"><span class="setsnum" id="wAway">0</span><span class="setslbl">PUNTOS POR SEXTOS</span></div>
         <div class="controls">
           <button class="scorebtn minus" data-team="away" data-d="-1">−</button>
@@ -138,6 +146,7 @@ button{border:0;cursor:pointer;touch-action:manipulation}
         <div class="note">−1 / +1 PUNTO</div>
       </div>
     </div>
+    <div class="arrastrado"><span class="anum" id="aNum">0 − 0</span><span class="albl">TANTEO ARRASTRADO</span></div>
     <div class="sextos" id="sxList"></div>
     <div class="panel">
       <div class="field"><label>ESCUDO ARABA</label></div>
@@ -263,7 +272,9 @@ function render(){
   $("fFecha").value=st.fecha; $("fComp").value=st.comp;
   if(document.activeElement!==$("fHome")) $("fHome").value=st.home;
   if(document.activeElement!==$("fAway")) $("fAway").value=st.away;
-  $("sHome").textContent=st.hs; $("sAway").textContent=st.as;
+  const b=st.base||{hs:0,as:0};
+  $("sHome").textContent=st.hs-b.hs; $("sAway").textContent=st.as-b.as;
+  $("aNum").textContent=st.hs+" − "+st.as;
   const sg=sextosGanados(st.sx); $("wHome").textContent=sg.h; $("wAway").textContent=sg.a;
   $("pName").textContent=PERIODOS_6[st.p]||PERIODOS_6[0];
   $("crestHome").classList.toggle("hidden",st.crest!=="home");
@@ -319,7 +330,8 @@ $("pMinus").onclick=()=>{
   st.sx=(st.sx||[]).filter(s=>s.p<st.p);
   /* Si el sexto al que volvemos tenia parcial conocido, restauramos el marcador con el que
      empezo: al re-avanzar se recalcula el mismo parcial y los puntos por sextos no se pierden. */
-  st.base=(borrado&&borrado.dhs!=null&&borrado.das!=null)?{hs:borrado.hs-borrado.dhs,as:borrado.as-borrado.das}:null;
+  st.base=(borrado&&borrado.dhs!=null&&borrado.das!=null)?{hs:borrado.hs-borrado.dhs,as:borrado.as-borrado.das}
+    :(esSexto(st.p)?null:{hs:st.hs,as:st.as});
   render(); pushLive();
 };
 $("pPlus").onclick=()=>{
@@ -416,7 +428,9 @@ $("btnStopLive").onclick=async()=>{
 function renderViewer(m){
   $("vComp").textContent=m.comp||"";
   $("vHome").textContent=m.home||"Local"; $("vAway").textContent=m.away||"Visitante";
-  $("vHomeScore").textContent=m.hs??0; $("vAwayScore").textContent=m.as??0;
+  const vb=m.base||{hs:0,as:0};
+  $("vHomeScore").textContent=(m.hs??0)-(vb.hs??0); $("vAwayScore").textContent=(m.as??0)-(vb.as??0);
+  $("vANum").textContent=(m.hs??0)+" − "+(m.as??0);
   const vg=sextosGanados(m.sx); $("vWHome").textContent=vg.h; $("vWAway").textContent=vg.a;
   $("vCrestHome").classList.toggle("hidden",m.crest!=="home");
   $("vCrestAway").classList.toggle("hidden",m.crest!=="away");
