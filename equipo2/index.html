@@ -26,7 +26,7 @@ button{border:0;cursor:pointer;touch-action:manipulation}
 .teams{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .team{border-radius:16px;padding:14px 9px;text-align:center;background:#22354a;min-width:0}
 .team.away{background:#372f3b}
-.team-name{width:100%;background:transparent;color:#fff;border:0;text-align:center;font-size:16px;font-weight:800;padding:5px 0;outline:none}
+.team-name{resize:none;overflow:hidden;display:block;line-height:1.2;font-family:inherit;box-sizing:border-box;width:100%;background:transparent;color:#fff;border:0;text-align:center;font-size:16px;font-weight:800;padding:5px 0;outline:none}
 .score{font-size:clamp(58px,16vw,88px);font-weight:850;line-height:1.2;font-variant-numeric:tabular-nums;margin:6px 0 10px}
 .controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .scorebtn{height:56px;border-radius:13px;font-size:27px;font-weight:800;color:#fff}
@@ -124,7 +124,7 @@ button{border:0;cursor:pointer;touch-action:manipulation}
     <div class="panel teams">
       <div class="team">
         <div class="crestslot"><img id="crestHome" class="hidden" alt="Escudo del Araba"></div>
-        <input class="team-name" id="fHome" value="Equipo local">
+        <textarea class="team-name" id="fHome" rows="1" spellcheck="false">Equipo local</textarea>
         <div class="score" id="sHome">0</div>
         <div class="scorelbl">TANTEO DEL SEXTO</div>
         <div class="setsrow"><span class="setsnum" id="wHome">0</span><span class="setslbl">PUNTOS POR SEXTOS</span></div>
@@ -136,7 +136,7 @@ button{border:0;cursor:pointer;touch-action:manipulation}
       </div>
       <div class="team away">
         <div class="crestslot"><img id="crestAway" class="hidden" alt="Escudo del Araba"></div>
-        <input class="team-name" id="fAway" value="Equipo visitante">
+        <textarea class="team-name" id="fAway" rows="1" spellcheck="false">Equipo visitante</textarea>
         <div class="score" id="sAway">0</div>
         <div class="scorelbl">TANTEO DEL SEXTO</div>
         <div class="setsrow"><span class="setsnum" id="wAway">0</span><span class="setslbl">PUNTOS POR SEXTOS</span></div>
@@ -257,9 +257,10 @@ function crestSrc(m,side){
   if(t && Object.prototype.hasOwnProperty.call(LIGA_EQ,t)){ const s=LIGA_EQ[t]; return s?CRESTS[s]:iniciales(t); }
   return m.crest===side?ARABA_CREST:null;
 }
-function ajustaNombres(){ const ids=["fHome","fAway"]; let m=16;
-  ids.forEach(id=>{ const e=$(id); if(!e) return; let fs=16; e.style.fontSize=fs+"px"; while(e.scrollWidth>e.clientWidth && fs>8){ fs--; e.style.fontSize=fs+"px"; } m=Math.min(m,fs); });
-  ids.forEach(id=>{ const e=$(id); if(e) e.style.fontSize=m+"px"; }); }
+function ajustaNombres(){ const ids=["fHome","fAway"]; let m=0;
+  ids.forEach(id=>{ const e=$(id); if(!e) return; e.style.height="auto"; m=Math.max(m,e.scrollHeight); });
+  ids.forEach(id=>{ const e=$(id); if(e) e.style.height=m+"px"; }); }
+['fHome','fAway'].forEach(id=>{ const e=document.getElementById(id); if(e) e.addEventListener("keydown",ev=>{ if(ev.key==="Enter"){ ev.preventDefault(); e.blur(); } }); });
 function pintaEscudo(id,m,side){ const e=$(id); if(!e) return; const s=crestSrc(m,side); if(s){ e.src=s; e.classList.remove("hidden"); } else { e.classList.add("hidden"); } }
 const HCKEY="mb2_eq_v1";
 function cargaEq(){ try{ return JSON.parse(localStorage.getItem(HCKEY))||{}; }catch(e){ return {}; } }
