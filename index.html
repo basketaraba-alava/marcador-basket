@@ -244,7 +244,7 @@ let live = { codigo:null, token:null, timer:null, listo:false };
 
 function nuevoEstado(){
   return { fecha:new Date().toISOString().slice(0,10), comp:"", home:"Equipo local", away:"Equipo visitante",
-           hs:0, as:0, p:0, fmt:6, sx:[], base:{hs:0,as:0}, crest:cargaCrest(), hc:cargaEq().hc||"", ac:cargaEq().ac||"" };
+           hs:0, as:0, p:0, fmt:6, sx:[], base:{hs:0,as:0}, crest:cargaCrest(), hc:"", ac:"" };
 }
 function estadoPublico(){
   return { fecha:st.fecha, comp:st.comp, home:st.home, away:st.away, hs:st.hs, as:st.as, p:st.p, fmt:6, sx:st.sx||[], base:st.base??null, crest:st.crest, hc:st.hc||"", ac:st.ac||"" };
