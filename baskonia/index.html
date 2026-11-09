@@ -223,6 +223,9 @@ function crestSrc(m,side){
   if(t && Object.prototype.hasOwnProperty.call(LIGA_EQ,t)){ const s=LIGA_EQ[t]; return s?CRESTS[s]:iniciales(t); }
   return m.crest===side?BASKONIA_CREST:null;
 }
+function ajustaNombres(){ const ids=["fHome","fAway"]; let m=16;
+  ids.forEach(id=>{ const e=$(id); if(!e) return; let fs=16; e.style.fontSize=fs+"px"; while(e.scrollWidth>e.clientWidth && fs>10){ fs--; e.style.fontSize=fs+"px"; } m=Math.min(m,fs); });
+  ids.forEach(id=>{ const e=$(id); if(e) e.style.fontSize=m+"px"; }); }
 function pintaEscudo(id,m,side){ const e=$(id); if(!e) return; const s=crestSrc(m,side); if(s){ e.src=s; e.classList.remove("hidden"); } else { e.classList.add("hidden"); } }
 const HCKEY="mbb_eq_v1";
 function cargaEq(){ try{ return JSON.parse(localStorage.getItem(HCKEY))||{}; }catch(e){ return {}; } }
@@ -260,6 +263,7 @@ function render(){
   $("sHome").textContent=st.hs; $("sAway").textContent=st.as;
   $("pName").textContent=PERIODOS_6[st.p]||PERIODOS_6[0];
   pintaEscudo("crestHome",st,"home"); pintaEscudo("crestAway",st,"away");
+  ajustaNombres();
   if($("selEqHome")) $("selEqHome").value=st.hc||""; if($("selEqAway")) $("selEqAway").value=st.ac||"";
   $("crestLocal").classList.toggle("on",st.crest==="home");
   $("crestVisitante").classList.toggle("on",st.crest==="away");
@@ -334,8 +338,8 @@ $("crestOculto").onclick=()=>setCrest("off");
 })();
 $("fFecha").onchange=e=>{ st.fecha=e.target.value; pushLive(); };
 $("fComp").oninput=e=>{ st.comp=e.target.value; pushLive(); };
-$("fHome").oninput=e=>{ st.home=e.target.value; pushLive(); };
-$("fAway").oninput=e=>{ st.away=e.target.value; pushLive(); };
+$("fHome").oninput=e=>{ st.home=e.target.value; ajustaNombres(); pushLive(); };
+$("fAway").oninput=e=>{ st.away=e.target.value; ajustaNombres(); pushLive(); };
 $("btnNuevo").onclick=async()=>{
   if(live.codigo&&LIVE&&live.listo){
     try{ await sb.rpc("actualizar_partido",{p_codigo:live.codigo,p_token:live.token,p_estado:{...estadoPublico(),fin:true}}); }catch(e){}
@@ -461,5 +465,5 @@ if(viewCode && !opKey){
   render(); renderHist();
 }
 </script>
-</body>
+<script>window.addEventListener("load",()=>{ try{ajustaNombres();}catch(e){} }); window.addEventListener("resize",()=>{ try{ajustaNombres();}catch(e){} });</script></body>
 </html>
