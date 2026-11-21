@@ -220,7 +220,7 @@ function sxHtml(arr,names){
   const map={}; (arr||[]).forEach(s=>{ if(s.dhs!=null) map[s.p]=s.dhs+"-"+s.das; });
   return [0,1,2,4,5,6].map(i=>`<div class="sx"><span class="l">${sxLabel(names,i)}</span><span class="s">${map[i]||"—"}</span></div>`).join("");
 }
-/* Resultado general por sextos: 1 punto al ganador de cada sexto; si empatan, 1 punto a cada equipo.
+/* Resultado general por sextos: 1 punto al ganador de cada sexto; si empatan, no suma ninguno.
    Se calcula siempre desde los parciales guardados (sx), sin estado aparte: correcciones y
    retrocesos de periodo no pueden contar dos veces. Parcial desconocido (dhs/das null): no cuenta. */
 function sextosGanados(sx){
@@ -229,7 +229,6 @@ function sextosGanados(sx){
     if(s.dhs==null||s.das==null) return;
     if(s.dhs>s.das) h++;
     else if(s.das>s.dhs) a++;
-    else { h++; a++; }
   });
   return {h,a};
 }
